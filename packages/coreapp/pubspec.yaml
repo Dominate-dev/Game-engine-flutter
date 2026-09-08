@@ -1,0 +1,150 @@
+name: coreapp
+description: >
+  Shared core plugin for all game plugins — API client, SignalR socket
+  service, connectivity/reconnection handling, storage, and base
+  presentation widgets (BaseState, BaseDialog, BaseSheet, loader overlay).
+  Every game plugin depends on this package; it contains no game-specific
+  logic.
+version: 1.0.0
+publish_to: 'none'
+resolution: workspace
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  dio: ^5.4.3
+  pretty_dio_logger: ^1.3.1
+  signalr_core: ^1.1.1
+  http: ^1.2.0
+  connectivity_plus: ^6.0.3
+  internet_connection_checker_plus: ^2.5.1
+  shared_preferences: ^2.2.3
+  equatable: ^2.0.5
+  pointycastle: ^3.9.1
+  asn1lib: ^1.5.8
+  flutter_spinkit: ^5.2.1
+  flutter_svg: ^2.0.10+1
+  chucker_flutter: ^1.8.5
+  lottie: ^3.3.1
+  share_plus: ^12.0.0
+  url_launcher: ^6.3.1
+  just_audio: ^0.10.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/btn_bg.png
+    - assets/images/ic_splash_bg.svg
+    - assets/images/ic_vs.svg
+    - assets/images/ic_setting.svg
+    - assets/images/ic_replay.svg
+    - assets/images/ic_back_long.svg
+    - assets/images/ic_test_interaction.svg
+    - assets/images/ic_avatars_default.png
+    - assets/images/ic_warning.svg
+    - assets/images/ic_pass.svg
+    - assets/images/ic_strike.svg
+    - assets/images/ic_close.svg
+    - assets/images/ic_bills.svg
+    - assets/images/ic_purple_circle.svg
+    - assets/images/ic_bg_game.png
+    - assets/images/ic_stars_win.png
+    - assets/images/ic_stars_loss.png
+    - assets/images/ic_win_ribbon.png
+    - assets/images/ic_coin.svg
+    - assets/images/ic_xp.svg
+    - assets/images/ic_jawaher.svg
+    - assets/images/ic_mask.svg
+    - assets/images/ic_circular.svg
+    - assets/images/ic_player_test.png
+    - assets/images/ic_img.png
+    - assets/lottie/anim_lobby.json
+    - assets/lottie/emojis_animation.json
+    - assets/lottie/lottie_turn_two.json
+    - assets/lottie/claim_rewards.json
+    - assets/lottie/anim_round_sand_clock.json
+    - assets/lottie/anim_agme_what_do_you_know.json
+    - assets/lottie/anim_stricke.json
+    - assets/lottie/anim_circular_blue.json
+    - assets/lottie/anim_circular_green.json
+    - assets/lottie/anim_circular_red.json
+    - assets/lottie/anim_correct_answer.json
+    - assets/lottie/anim_wrong_answer.json
+    - assets/lottie/anim_timer.json
+    - assets/lottie/anim_game_bell.json
+    - assets/lottie/anim_game_auction.json
+    - assets/lottie/anim_game_breaker.json
+    - assets/lottie/anim_game_come_back.json
+    - assets/audio/answer_click_choice_t30.mp3
+    - assets/audio/bell_round_t30.mp3
+    - assets/audio/collecting_rewards_sd_t30.mp3
+    - assets/audio/exit_the_game_t30.mp3
+    - assets/audio/get_strick_t30.mp3
+    - assets/audio/losing_game_t30.mp3
+    - assets/audio/minor_t30.mp3
+    - assets/audio/music_running_t30.mp3
+    - assets/audio/pass_t30.mp3
+    - assets/audio/raising_level_t30.mp3
+    - assets/audio/right_answer_t30.mp3
+    - assets/audio/sd_waiting_lobby.mp3
+    - assets/audio/start_round_t30.mp3
+    - assets/audio/start_time_t30.mp3
+    - assets/audio/starting_gamer_turn_t30.mp3
+    - assets/audio/time_over_t30.mp3
+    - assets/audio/waiting_in_the_lobby_t30.mp3
+    - assets/audio/winning_game_t30.mp3
+    - assets/audio/wrong_answer_t30.mp3
+    - assets/audio/you_faster_t30.mp3
+
+  # Font kit shared by every game plugin — any package/app that depends on
+  # coreapp gets these families for free (Flutter merges dependency fonts
+  # automatically), so game plugins never need to redeclare or re-bundle them.
+  fonts:
+    - family: EnLight
+      fonts:
+        - asset: assets/fonts/en_light_font.ttf
+    - family: EnRegular
+      fonts:
+        - asset: assets/fonts/en_regular_font.ttf
+    - family: EnMedium
+      fonts:
+        - asset: assets/fonts/en_medium_font.ttf
+    - family: EnBold
+      fonts:
+        - asset: assets/fonts/en_bold_font.ttf
+    - family: EnExtraBold
+      fonts:
+        - asset: assets/fonts/en_extra_bold.ttf
+    - family: ArLight
+      fonts:
+        - asset: assets/fonts/ar_light_font.ttf
+    - family: ArRegular
+      fonts:
+        - asset: assets/fonts/ar_regular_font.ttf
+    - family: ArMedium
+      fonts:
+        - asset: assets/fonts/ar_medium_font.ttf
+    - family: ArSemiBold
+      fonts:
+        - asset: assets/fonts/ar_semibold_font.ttf
+    - family: ArBold
+      fonts:
+        - asset: assets/fonts/ar_bold_font.ttf
+    - family: GameIcons
+      fonts:
+        - asset: assets/fonts/ic_medum_game.otf
+    - family: Numbers
+      fonts:
+        - asset: assets/fonts/numbers.ttf

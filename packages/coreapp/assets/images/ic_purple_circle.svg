@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="270" viewBox="0 0 260 260">
+  <defs>
+    <linearGradient id="bellCircle" x1="23.34" y1="25.34" x2="234.66" y2="236.66" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43CBFF"/>
+      <stop offset="1" stop-color="#9708CC"/>
+    </linearGradient>
+  </defs>
+  <circle cx="129" cy="131" r="105.66" fill="url(#bellCircle)"/>
+  <path fill="#ffffff" fill-opacity="0.1" fill-rule="evenodd" d="M129.33 191.72c34.17 0 61.86-27.7 61.86-61.86 0-34.16-27.69-61.86-61.86-61.86s-61.86 27.7-61.86 61.86c0 34.16 27.7 61.86 61.86 61.86z"/>
+  <path fill="none" fill-rule="evenodd" stroke="#ffffff" stroke-opacity="0.2" d="M130 238c59.09 0 107-47.91 107-107S189.09 24 130 24 23 71.91 23 131s47.91 107 107 107z"/>
+  <path fill="none" fill-rule="evenodd" stroke="#ffffff" stroke-opacity="0.2" d="M130 249c65.17 0 118-52.83 118-118S195.17 13 130 13 12 65.83 12 131s52.83 118 118 118z"/>
+</svg>

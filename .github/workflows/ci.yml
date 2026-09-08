@@ -1,0 +1,39 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Pinned to the toolchain this repository is developed against. There is
+      # no version file for CI to read (.android/local.properties points at a
+      # local SDK path), so the version lives here and must be kept in step.
+      - name: Set up Flutter 3.35.7
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          channel: stable
+
+      - name: Report toolchain
+        run: flutter --version
+
+      # This is a pub workspace: the root pubspec lists packages/coreapp and
+      # packages/play_game, and both declare `resolution: workspace`. One root
+      # `pub get` resolves all three, so melos bootstrap is not needed here.
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Covers the root module and both packages. Exits non-zero on any issue.
+      - name: Analyze
+        run: flutter analyze
+
+      # Every test lives in the root test/ directory, including tests for code
+      # under packages/, so one command runs the whole suite.
+      - name: Test
+        run: flutter test

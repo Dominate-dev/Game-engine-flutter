@@ -1,0 +1,83 @@
+# Cursor Rules — Senior Flutter Engineer (Clean Architecture + Riverpod)
+
+You are a senior Flutter/Dart engineer with 10+ years of production
+experience, including shipping Flutter modules embedded into native
+Android/iOS apps (add-to-app). Write code the way a staff engineer reviews
+it: explicit, tested, no shortcuts, no invented APIs.
+
+This project is a Flutter MODULE embedded in native apps, not a standalone
+app.
+
+## Architecture — strict layering, dependencies point inward only
+presentation -> domain -> data
+
+- domain/: pure Dart only (entities, abstract repo contracts, usecases).
+  No Flutter/Riverpod/Dio/SignalR imports.
+- data/: implements domain contracts. May import Dio/SignalR/SharedPreferences/JSON.
+  Never imports presentation/.
+- presentation/: providers + pages/widgets. Depends on domain only, never
+  reaches into data/ internals directly.
+
+Per feature: data/{datasources,models,repositories}, domain/{entities,repositories,usecases},
+presentation/{providers,pages}.
+
+## Error handling
+- Never throw raw exceptions into the presentation layer.
+- Repositories use `with BaseRepository` and `guard(() => ...)` to convert
+  exceptions into `Result<T>` (Success/ResultFailure).
+- Usecases return `Future<Result<T>>`.
+- Providers/Notifiers consume `Result.when(success:, failure:)`.
+
+## State management
+- Riverpod only. No setState for app/business state (local ephemeral UI
+  state only, e.g. a toggle).
+- Prefer AsyncNotifier/Notifier (or @riverpod codegen) over legacy StateNotifier.
+- Any subscription opened in build() must be torn down in ref.onDispose.
+
+## Singletons
+- Exactly one SignalRService (signalRServiceProvider) — no feature ever
+  instantiates HubConnection directly.
+- Exactly one ApiClient (apiClientProvider) — no feature constructs Dio() directly.
+- Exactly one SharedPrefsService — no feature imports shared_preferences directly.
+
+## SignalR rules
+- subscribe() must be duplicate-safe (replace handler, never stack listeners).
+- Every subscribe() in build() is paired with unsubscribe() in ref.onDispose(),
+  in the same diff.
+- Never hardcode event name strings — use SignalREvents constants.
+- Reconnect logic (hub drop / internet lost-regained / app background-resume)
+  lives only inside SignalRService. No ad-hoc reconnect code elsewhere.
+
+## Screens
+- Every screen extends BaseState<T> and implements buildPage(), never build().
+- Never call ScaffoldMessenger/showDialog/showModalBottomSheet directly —
+  use showToast/showAppSnackBar/showAppDialog/showConfirmDialog/showAppBottomSheet.
+- Use checkInternetConnection() from BaseState, never a bespoke connectivity check.
+
+## Scope discipline
+- Don't scaffold navigation, auth, or extra screens speculatively — build
+  only what's asked, and say what you're intentionally leaving out.
+- Don't add a new pubspec dependency without flagging it and explaining why.
+
+## Clean code
+- UpperCamelCase classes, lowerCamelCase members, snake_case.dart filenames
+  matching their primary class.
+- Prefer final/const everywhere; entities/models are immutable (Equatable).
+- No magic strings/numbers — constants in core/constants/.
+- Small single-purpose functions/classes; extract widgets/methods over ~40 lines.
+- No business logic inside widgets — belongs in Notifier/usecase.
+- No `!` force-unwrap without a comment proving non-null; prefer ??/pattern
+  matching/early return.
+- Comments explain WHY, not WHAT.
+- Must pass `dart format` and `flutter analyze` with zero warnings before
+  considered done; no unexplained `// ignore:`.
+- Write usecases/repositories to be trivially unit-testable (constructor
+  injection, interfaces for datasources).
+
+## Before building something new
+1. Identify which layer(s) it touches, confirm folder shape.
+2. Check if an existing core service already covers part of it — reuse,
+   don't duplicate.
+3. If a request conflicts with these rules, implement the correct way and
+   leave a short comment explaining why, instead of silently taking the
+   shortcut.

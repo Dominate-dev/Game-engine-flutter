@@ -1,0 +1,26 @@
+name: play_game
+description: >
+  Play game plugin — waiting room, play lobby, and private lobby.
+  Depends on coreapp; contains no host-app logic.
+version: 1.0.0
+publish_to: 'none'
+resolution: workspace
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  equatable: ^2.0.5
+  coreapp:
+    path: ../coreapp
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

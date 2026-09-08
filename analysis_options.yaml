@@ -1,0 +1,25 @@
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_final_fields: true
+    avoid_print: true
+    # MA3. Async correctness and safety, not style:
+    # - use_build_context_synchronously catches a BuildContext used after an
+    #   await, which is a real crash once the widget is gone.
+    # - unawaited_futures makes a dropped Future deliberate (`unawaited(...)`)
+    #   rather than accidental — this codebase already writes it that way.
+    # - avoid_dynamic_calls guards the hub payload paths, where `dynamic`
+    #   arrives from the wire and a typo is a runtime failure, not a compile
+    #   error.
+    # - cancel_subscriptions catches a StreamSubscription that outlives its
+    #   owner; the SignalR and connectivity streams are long-lived.
+    use_build_context_synchronously: true
+    unawaited_futures: true
+    avoid_dynamic_calls: true
+    cancel_subscriptions: true
