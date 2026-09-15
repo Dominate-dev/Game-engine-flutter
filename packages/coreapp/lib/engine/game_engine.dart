@@ -268,6 +268,15 @@ class GameEngine {
     _appliedConfig = config.copyWith(
       language: AppLanguage.normalize(config.language),
     );
+
+    // A hub that failed for want of a usable token gets one retry once the
+    // host supplies a token; otherwise nothing would ever reconnect it.
+    final service = _container.read(signalRServiceProvider);
+    if (config.token.isNotEmpty &&
+        service.checkConnectionStatus() == SignalRStatus.failed &&
+        !service.hasLiveConnection) {
+      unawaited(service.recoverConnection());
+    }
   }
 
   void _startWatchingStatus() {

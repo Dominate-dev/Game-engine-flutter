@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../constants/api_endpoints.dart';
+
 /// Retries a request once with a freshly obtained access token after a 401.
 ///
 /// [obtainRefreshedAccessToken] owns the entire refresh contract — reading
@@ -35,9 +37,12 @@ class RefreshTokenInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final options = err.requestOptions;
+    // The login is the refresh's own fallback: refreshing on its 401 would
+    // wait on the very refresh that is running it.
     final eligible = err.response?.statusCode == 401 &&
         options.extra[isRefreshCallKey] != true &&
-        options.extra[_retriedKey] != true;
+        options.extra[_retriedKey] != true &&
+        options.path != ApiEndpoints.login;
 
     if (!eligible) {
       handler.next(err);

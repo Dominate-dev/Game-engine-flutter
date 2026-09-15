@@ -471,7 +471,7 @@ class _AuctionRoundScreenState extends BaseState<AuctionRoundScreen>
           showCursor: false,
           enableInteractiveSelection: false,
           keyboardType: TextInputType.none,
-          onTap: _showCountPicker,
+          onTap: session.isMyTurn ? _showCountPicker : null,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 11,

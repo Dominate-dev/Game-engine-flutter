@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:play_game/play_game.dart';
+import 'package:play_game/presentation/dialogs/count_answer_dialog.dart';
 import 'package:play_game/presentation/widgets/rounds/round_attempts_info.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -299,6 +300,62 @@ void main() {
 
       expect(find.text('Bidding'), findsNothing);
       expect(find.text('Take the turn'), findsNothing);
+    });
+  });
+
+  group('the answer-count field follows the turn', () {
+    Future<void> tapCountField(WidgetTester tester) async {
+      await tester.tap(find.byType(AppTextField));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    // Lets a start-increasing overlay raised by the new turn retire first.
+    Future<void> changeTurn(WidgetTester tester, String playerId) async {
+      notifier().applySharedRoundEvent(
+        PlayGameHubEvents.changeTurn,
+        {'arg0': playerId, 'arg1': 'g1'},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump();
+    }
+
+    testWidgets('it opens the picker on my turn', (tester) async {
+      await pumpBidding(tester);
+
+      await tapCountField(tester);
+
+      expect(find.byType(CountAnswerDialog), findsOneWidget);
+    });
+
+    testWidgets('it opens no picker when it is not my turn', (tester) async {
+      await pumpBidding(tester, currentTurn: _opponentId);
+
+      await tapCountField(tester);
+
+      expect(find.byType(CountAnswerDialog), findsNothing);
+      expect(find.byType(AppTextField), findsOneWidget);
+    });
+
+    testWidgets('it opens the picker once the turn comes to me',
+        (tester) async {
+      await pumpBidding(tester, currentTurn: _opponentId);
+
+      await changeTurn(tester, _localId);
+      await tapCountField(tester);
+
+      expect(find.byType(CountAnswerDialog), findsOneWidget);
+    });
+
+    testWidgets('it stops opening the picker once the turn moves away',
+        (tester) async {
+      await pumpBidding(tester);
+
+      await changeTurn(tester, _opponentId);
+      await tapCountField(tester);
+
+      expect(find.byType(CountAnswerDialog), findsNothing);
     });
   });
 

@@ -1148,6 +1148,82 @@ committed or pushed.
 
 ---
 
+## N6 — Stale HubConnection after long idle: `stop()` is now bounded
+
+**Date:** 2026-09-10 · **Branch:** `main-config` · **HEAD:** `8b96b7a` ·
+**Applied to the working tree — NOT committed.**
+
+**Problem — VERIFIED** (reproduced against signalr_core 1.1.2's real
+`HubConnection`/`HttpConnection`): `HttpConnection.stop()` called while a
+start or auto-reconnect attempt is in flight waits for that attempt, and if
+the attempt then fails, `_startInternal`'s catch marks the connection
+`disconnected` without completing the stop completer — `stop()` never
+returns. `SignalRService` awaited `stop()` without a bound in
+`_cleanupConnection`, `_stopHubForNoInternet` and `disconnect`, and cleared
+`_hubConnection` only afterwards. No fresh `HubConnection` could be built, the
+status froze at `connecting`/`reconnecting`, and the Reconnect button's call
+never returned, so its in-flight guard swallowed every later tap. The earlier
+`startTimeout` and stale-claim fixes both route through the same cleanup;
+their tests passed only because the test fake's `stop()` returns instantly.
+
+**Change — `packages/coreapp/lib/signalr/signalr_service.dart` only:**
+
+- `stopTimeout` (5 s) bounds `stop()` in all three teardown paths. On timeout
+  the existing catch/finally clears the reference and the flags.
+  `disconnect()` catches only `TimeoutException`, so any other stop error
+  still propagates as before.
+- `onclose` / `onreconnecting` / `onreconnected` return early unless their
+  `HubConnection` is still the current one.
+- Each teardown clears `_hubConnection` only if it is still the hub that call
+  stopped. Needed because two bounded cleanups of the same abandoned hub can
+  now finish at different times, and the later one would otherwise clear the
+  fresh connection.
+
+The 5 s value is a chosen bound, not derived from backend behaviour
+(**INFERRED** sufficient: a healthy stop is a local transport close).
+
+**Not changed:** app lifecycle, native integration, URLs, transport/auth,
+signalr_core itself, game entry. Two separate findings (private join-by-code
+not retried after recovery; a thrown `invoke` leaving a join/create guard
+claimed) are recorded in [TASKS.md](TASKS.md) and deliberately not fixed here.
+
+**Tests:** `test/signalr_stop_timeout_test.dart` (8), mostly the real
+`HubConnection`/`HttpConnection` over a scripted transport. All 8 **proven to
+fail** against the old behaviour; the two abandoned-hub tests also **proven to
+fail** with only the identity checks disabled. Groups 14/15 of
+`signalr_connection_lifecycle_test.dart` are unchanged and pass.
+
+**Verification:** `flutter analyze` **0 issues**; `flutter test` **1983
+passing / 0 failing** (1975 / 0 before the change).
+
+**Residual — by code reading, not tested:** signalr_core's own auto-reconnect
+attempts still have no timeout. A stalled attempt with no internet flap still
+waits for the OS to fail the socket; pressing Reconnect now recovers it.
+Patching signalr_core is a dependency change (see **N5**).
+
+---
+
+## Auction answer-count field opens the picker only on my turn
+
+**Date:** 2026-09-13 · **Applied to the working tree — NOT committed.**
+
+`AuctionRoundScreen`'s answer-count `AppTextField` now passes
+`onTap: session.isMyTurn ? _showCountPicker : null`. The gate is the existing
+`GameSessionState.isMyTurn` (`currentTurn` matched against the seated local
+player), read from the watched session, so it updates on every `ChangeTurn`.
+The field's appearance, `readOnly`, the timer and every other round are
+unchanged. No existing task ID covers this change.
+
+**Tests:** 4 new in `test/auction_bidding_ui_test.dart` (group "the
+answer-count field follows the turn"). The two "not my turn" cases are
+**proven to fail** against the previous unconditional `onTap`.
+
+**Verification:** `flutter test test/auction_*_test.dart` **229 passing**;
+`flutter test` **1987 passing / 0 failing** (1983 / 0 before);
+`flutter analyze` **0 issues**.
+
+---
+
 ## Documentation
 
 **Date:** 2026-09-02

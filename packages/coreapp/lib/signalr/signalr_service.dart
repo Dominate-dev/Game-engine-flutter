@@ -31,10 +31,12 @@ class SignalRService {
     NetworkInfo? networkInfo,
     Future<String?> Function()? obtainRefreshedAccessToken,
     HubConnectionFactory? hubConnectionFactory,
+    DateTime Function()? clock,
   })  : _headersBuilder = headersBuilder,
         _networkInfo = networkInfo,
         _obtainRefreshedAccessToken = obtainRefreshedAccessToken,
-        _hubConnectionFactory = hubConnectionFactory;
+        _hubConnectionFactory = hubConnectionFactory,
+        _now = clock ?? DateTime.now;
 
   final ApiHeadersBuilder? _headersBuilder;
   final NetworkInfo? _networkInfo;
@@ -50,6 +52,10 @@ class SignalRService {
   /// makes start/onclose/onreconnecting/onreconnected and everything gated
   /// behind them reachable without a socket.
   final HubConnectionFactory? _hubConnectionFactory;
+
+  // Wall clock, so time the device spent asleep still counts as silence.
+  final DateTime Function() _now;
+  DateTime? _lastServerMessageAt;
 
   HubConnection? _hubConnection;
   /// One hub dispatcher per event name. Re-attached after reconnect.
@@ -161,10 +167,14 @@ class SignalRService {
       // this same try, so production behaviour is unchanged, but a caller
       // that supplies its own connection no longer needs a headers builder
       // it will never use.
-      _hubConnection = _buildHubConnection(url, tokenFactory!);
+      final hub = _buildHubConnection(url, tokenFactory!);
+      _hubConnection = hub;
 
-      _hubConnection!
+      hub
         ..onclose((error) {
+          if (!_isCurrentHub(hub, 'onclose')) {
+            return;
+          }
           _isConnecting = false;
           AppLogger.log(
             'Hub closed${error != null ? ' — error: $error' : ''}',
@@ -175,14 +185,21 @@ class SignalRService {
           }
         })
         ..onreconnecting((error) {
+          if (!_isCurrentHub(hub, 'onreconnecting')) {
+            return;
+          }
           AppLogger.log(
             'Hub reconnecting${error != null ? ' — error: $error' : ''}',
           );
           _setStatus(SignalRStatus.reconnecting);
         })
         ..onreconnected((connectionId) {
+          if (!_isCurrentHub(hub, 'onreconnected')) {
+            return;
+          }
           _isConnecting = false;
           _retryDelayMs = 1000;
+          _heardFromServer();
           AppLogger.log('Hub reconnected — connectionId: $connectionId');
           _setStatus(SignalRStatus.connected);
           _reattachAllHandlers();
@@ -192,6 +209,7 @@ class SignalRService {
       await _hubConnection!.start()?.timeout(startTimeout);
       _isConnecting = false;
       _retryDelayMs = 1000;
+      _heardFromServer();
       AppLogger.log(
         'Hub started — connectionId: ${_hubConnection?.connectionId}',
       );
@@ -222,13 +240,18 @@ class SignalRService {
     _reconnectTimer = null;
     _manuallyDisconnected = manual;
     _suppressAutoReconnect = true;
+    final hub = _hubConnection;
 
     try {
-      await _hubConnection?.stop();
+      await hub?.stop().timeout(stopTimeout);
+    } on TimeoutException {
+      AppLogger.log('disconnect() — stop timed out, connection abandoned');
     } finally {
       _suppressAutoReconnect = false;
       _isConnecting = false;
-      _hubConnection = null;
+      if (identical(_hubConnection, hub)) {
+        _hubConnection = null;
+      }
       _setStatus(status);
     }
   }
@@ -327,23 +350,41 @@ class SignalRService {
     // negotiate replaces it and adds ?access_token= to the WebSocket URL,
     // which this server rejects (close 1002). Auth + native headers come
     // from [SignalRHttpClient].
-    return HubConnectionBuilder()
-        .withUrl(
-          url,
-          HttpConnectionOptions(
-            transport: HttpTransportType.webSockets,
-            skipNegotiation: true,
-            client: SignalRHttpClient(
-              headersBuilder: headersBuilder,
-              tokenProvider: tokenFactory,
-              networkInfo: _networkInfo,
-              obtainRefreshedAccessToken: _obtainRefreshedAccessToken,
-            ),
-            logging: (level, message) => AppLogger.log('[hub] $message'),
-          ),
-        )
-        .withAutomaticReconnect([0, 2000, 5000, 10000, 15000, 30000])
-        .build();
+    void logging(LogLevel level, String message) =>
+        AppLogger.log('[hub] $message');
+    final connection = HttpConnection(
+      url: url,
+      options: HttpConnectionOptions(
+        transport: HttpTransportType.webSockets,
+        skipNegotiation: true,
+        client: SignalRHttpClient(
+          headersBuilder: headersBuilder,
+          tokenProvider: tokenFactory,
+          networkInfo: _networkInfo,
+          obtainRefreshedAccessToken: _obtainRefreshedAccessToken,
+        ),
+        logging: logging,
+      ),
+    );
+    // What HubConnectionBuilder.build() does with these same options, spelled
+    // out so the connection's receive callback can be observed.
+    final hub = HubConnection(
+      connection: connection,
+      logging: logging,
+      protocol: JsonHubProtocol(),
+      reconnectPolicy: DefaultReconnectPolicy(
+        retryDelays: const [0, 2000, 5000, 10000, 15000, 30000],
+      ),
+    );
+    // Every frame the server sends, keep-alive pings included.
+    final receive = connection.onreceive;
+    connection.onreceive = (data) {
+      if (identical(hub, _hubConnection)) {
+        _heardFromServer();
+      }
+      receive?.call(data);
+    };
+    return hub;
   }
 
   /// How long one `start()` may take before the attempt is abandoned.
@@ -360,6 +401,10 @@ class SignalRService {
   /// backoff retry. No new state and no new path; the stall simply becomes a
   /// failure like any other.
   static const startTimeout = Duration(seconds: 30);
+
+  // signalr_core 1.1.2 can leave stop() pending forever when it lands on an
+  // in-flight start; past this the old connection is abandoned instead.
+  static const stopTimeout = Duration(seconds: 5);
 
   SignalRStatus checkConnectionStatus() => _status;
 
@@ -396,7 +441,23 @@ class SignalRService {
       return false;
     }
     if (isConnected && _status != SignalRStatus.connected) {
+      // A live hub whose status says otherwise. This was the one transition
+      // to `connected` that skipped `_reattachAllHandlers()` and
+      // `_notifyRecovered()`: the Reconnect button reached it whenever the
+      // popup was showing over a working connection, so the status was
+      // corrected and the popup came down, but no recovery was announced —
+      // `GameController.onRecovered` never sent CheckPlayerGame, and events
+      // missed while the status was down stayed lost. It is a recovery, so
+      // it is announced through the same stream `onreconnected` uses.
+      //
+      // Not while a `connect()` is still in flight: that call announces its
+      // own success when `start()` returns, and announcing here as well would
+      // resynchronise the game twice for one connection.
       _setStatus(SignalRStatus.connected);
+      if (!_isConnecting) {
+        _reattachAllHandlers();
+        _notifyRecovered();
+      }
     }
     AppLogger.log(
       '$source skipped — already ${isConnected ? 'connected' : 'connecting'}',
@@ -487,6 +548,7 @@ class SignalRService {
     }
 
     void dispatcher(List<Object?>? args) {
+      _heardFromServer();
       AppLogger.log('Event received — $eventName | args: $args');
       final listeners = List<void Function(List<Object?>?)>.from(
         _eventListeners[eventName] ?? const [],
@@ -570,7 +632,34 @@ class SignalRService {
       AppLogger.log('App resumed — attempting reconnect');
       unawaited(reconnect());
     }
+    // A socket that died while the app was away still reports connected
+    // until signalr_core's own server timeout fires, and that timer may not
+    // have run in the background.
+    if (_serverWentSilent) {
+      AppLogger.log(
+        'App resumed — no server message within the server timeout, '
+        'replacing the connection',
+      );
+      unawaited(_replaceSilentConnection());
+    }
   }
+
+  bool get _serverWentSilent {
+    final hub = _hubConnection;
+    final heard = _lastServerMessageAt;
+    if (hub == null || heard == null || !isConnected || _isConnecting) {
+      return false;
+    }
+    return _now().difference(heard) >
+        Duration(milliseconds: hub.serverTimeoutInMilliseconds);
+  }
+
+  Future<void> _replaceSilentConnection() async {
+    await _cleanupConnection();
+    await reconnect();
+  }
+
+  void _heardFromServer() => _lastServerMessageAt = _now();
 
   void onAppPaused() {
     AppLogger.log('App paused');
@@ -586,20 +675,31 @@ class SignalRService {
   }
 
   Future<void> _cleanupConnection() async {
-    if (_hubConnection == null) {
+    final hub = _hubConnection;
+    if (hub == null) {
       return;
     }
 
     _suppressAutoReconnect = true;
     try {
       AppLogger.log('Cleaning up previous hub connection');
-      await _hubConnection!.stop();
+      await hub.stop().timeout(stopTimeout);
     } catch (error) {
       AppLogger.log('Cleanup error — $error');
     } finally {
       _suppressAutoReconnect = false;
-      _hubConnection = null;
+      if (identical(_hubConnection, hub)) {
+        _hubConnection = null;
+      }
     }
+  }
+
+  bool _isCurrentHub(HubConnection hub, String event) {
+    if (identical(hub, _hubConnection)) {
+      return true;
+    }
+    AppLogger.log('$event ignored — from an abandoned hub connection');
+    return false;
   }
 
   void _reattachAllHandlers() {
@@ -658,7 +758,8 @@ class SignalRService {
   }
 
   Future<void> _stopHubForNoInternet() async {
-    if (_hubConnection == null) {
+    final hub = _hubConnection;
+    if (hub == null) {
       _setStatus(SignalRStatus.disconnectedNoInternet);
       return;
     }
@@ -667,13 +768,15 @@ class SignalRService {
     _stoppingForNoInternet = true;
     _suppressAutoReconnect = true;
     try {
-      await _hubConnection?.stop();
+      await hub.stop().timeout(stopTimeout);
     } catch (error) {
       AppLogger.log('Stop hub on no-internet — $error');
     } finally {
       _suppressAutoReconnect = false;
       _isConnecting = false;
-      _hubConnection = null;
+      if (identical(_hubConnection, hub)) {
+        _hubConnection = null;
+      }
       _stoppingForNoInternet = false;
       _setStatus(SignalRStatus.disconnectedNoInternet);
       // The `_hubUrl != null` condition that used to sit here is now inside
