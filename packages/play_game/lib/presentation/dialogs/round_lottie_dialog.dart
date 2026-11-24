@@ -16,13 +16,28 @@ class RoundLottieDialog extends ConsumerStatefulWidget {
     this.sound,
     this.marginTop = 0,
     this.timer = 3000,
+    this.compact = false,
   });
+
+  /// The same message as a slim banner (small animation beside the text),
+  /// for the fast pacing presentation. Timer, sound and dismissal are
+  /// unchanged.
+  RoundLottieDialog asBanner() => RoundLottieDialog(
+        key: key,
+        lottie: lottie,
+        text: text,
+        sound: sound,
+        marginTop: marginTop,
+        timer: timer,
+        compact: true,
+      );
 
   final Widget lottie;
   final String? text;
   final String? sound;
   final double marginTop;
   final int timer;
+  final bool compact;
 
   @override
   ConsumerState<RoundLottieDialog> createState() => _RoundLottieDialogState();
@@ -77,6 +92,38 @@ class _RoundLottieDialogState extends ConsumerState<RoundLottieDialog> {
   @override
   Widget build(BuildContext context) {
     final message = widget.text?.trim() ?? '';
+
+    if (widget.compact) {
+      return Center(
+        child: Material(
+          color: AppColors.purple,
+          elevation: 6,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(10, 6, 18, 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox.square(dimension: 52, child: widget.lottie),
+                if (message.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: AppTextView(
+                      message,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.onBackground,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return PopScope(
       canPop: false,

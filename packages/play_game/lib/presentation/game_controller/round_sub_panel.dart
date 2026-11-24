@@ -200,15 +200,19 @@ class _RoundSubPanelLayerState extends ConsumerState<RoundSubPanelLayer> {
           child: child,
         ),
         child: GamePace.fast
-            // A banner high on the screen that never takes a tap: the
-            // question and the answers stay visible and playable under it.
+            // A slim banner across the top strip (over the settings row and
+            // the round title, which never change mid-round) that never takes
+            // a tap. The scoreboard, timer, question, answers and the round's
+            // own controls stay visible and playable.
             ? IgnorePointer(
                 child: Align(
-                  alignment: const Alignment(0, -0.62),
+                  alignment: const Alignment(0, -0.74),
                   child: FractionallySizedBox(
-                    widthFactor: 0.82,
-                    heightFactor: 0.26,
-                    child: panel.child,
+                    widthFactor: 0.94,
+                    heightFactor: 0.12,
+                    child: panel.child is RoundLottieDialog
+                        ? (panel.child as RoundLottieDialog).asBanner()
+                        : panel.child,
                   ),
                 ),
               )
