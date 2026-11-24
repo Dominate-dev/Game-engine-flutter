@@ -205,6 +205,13 @@ class GameController extends AutoDisposeNotifier<GameSessionState> {
   }
 
   void _onHubEvent(GameHubEvent event) {
+    if (_isForAnotherGame(event)) {
+      AppLogger.log(
+        'GameController — dropped ${event.name} for another game '
+        '(${HubEventPayload.gameIdOf(event.data)}, playing ${state.game?.id})',
+      );
+      return;
+    }
     if (state.phase == GamePhase.waiting &&
         PlayGameHubEvents.waitingScreenEvents.contains(event.name)) {
       return;
@@ -255,6 +262,35 @@ class GameController extends AutoDisposeNotifier<GameSessionState> {
     if (PlayGameHubEvents.sharedRoundEvents.contains(event.name)) {
       applySharedRoundEvent(event.name, event.data);
     }
+  }
+
+  // Hub events are delivered per user, not per game, so a player can still
+  // receive a late GameOver, question or turn change from a game they left
+  // while a new one is running. Once a game is in play only its own events
+  // may touch it. Lobbies are exempt (a lobby legitimately moves to the game
+  // it joins), and so is GameRestore, the server's own account of which game
+  // the player is in.
+  static const _inPlayPhases = {
+    GamePhase.wdyk,
+    GamePhase.auction,
+    GamePhase.bell,
+    GamePhase.comeBack,
+    GamePhase.breaker,
+    GamePhase.finishRound,
+  };
+
+  bool _isForAnotherGame(GameHubEvent event) {
+    if (event.name == PlayGameHubEvents.gameRestore) {
+      return false;
+    }
+    if (!_inPlayPhases.contains(state.phase) && state.result == null) {
+      return false;
+    }
+    final current = state.game?.id;
+    final incoming = HubEventPayload.gameIdOf(event.data);
+    return incoming != null &&
+        HubEventPayload.looksLikeGameId(current) &&
+        incoming != current;
   }
 
   /// Session routing from [PlayGameHubBindings.stream].
