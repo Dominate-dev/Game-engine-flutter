@@ -238,6 +238,19 @@ class GameEngine {
   }
 
   Future<void> _apply(GameEngineConfig config) async {
+    // First, so nothing below talks to the wrong server. A changed address
+    // rebuilds the REST client; a live hub on the old server is dropped and
+    // reconnects to the new one on the next connect.
+    if (ApiEndpoints.useServer(config.apiBaseUrl)) {
+      AppLogger.log('GameEngine — server is now ${ApiEndpoints.baseUrl}');
+      _container.invalidate(apiClientProvider);
+      final hub = _container.read(signalRServiceProvider);
+      if (hub.hasLiveConnection) {
+        // Manual, so no automatic reconnect revives it on the old address.
+        await hub.disconnect();
+      }
+    }
+
     final prefs = _container.read(sharedPrefsProvider);
     await prefs.setToken(value: config.token);
     await prefs.setSocialMediaId(value: config.socialMediaId);

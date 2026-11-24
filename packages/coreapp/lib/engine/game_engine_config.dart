@@ -15,6 +15,7 @@ class GameEngineConfig extends Equatable {
     this.language = AppLanguage.english,
     this.musicEnabled = true,
     this.soundEnabled = true,
+    this.apiBaseUrl = '',
   });
 
   final String token;
@@ -38,6 +39,10 @@ class GameEngineConfig extends Equatable {
   final bool musicEnabled;
   final bool soundEnabled;
 
+  // The https origin of the server the host is signed in to (no /api, no
+  // /GameHub). Empty means "use the address the module was built with".
+  final String apiBaseUrl;
+
   GameEngineConfig copyWith({
     String? token,
     int? userId,
@@ -45,6 +50,7 @@ class GameEngineConfig extends Equatable {
     String? language,
     bool? musicEnabled,
     bool? soundEnabled,
+    String? apiBaseUrl,
   }) {
     return GameEngineConfig(
       token: token ?? this.token,
@@ -53,6 +59,7 @@ class GameEngineConfig extends Equatable {
       language: language ?? this.language,
       musicEnabled: musicEnabled ?? this.musicEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
     );
   }
 
@@ -66,6 +73,7 @@ class GameEngineConfig extends Equatable {
       language: AppLanguage.normalize(_stringOrNull(map['language'])),
       musicEnabled: _bool(map['musicEnabled']) ?? true,
       soundEnabled: _bool(map['soundEnabled']) ?? true,
+      apiBaseUrl: _string(map['apiBaseUrl']),
     );
   }
 
@@ -76,6 +84,7 @@ class GameEngineConfig extends Equatable {
         'language': language,
         'musicEnabled': musicEnabled,
         'soundEnabled': soundEnabled,
+        'apiBaseUrl': apiBaseUrl,
       };
 
   static String _string(Object? value) => value?.toString().trim() ?? '';
@@ -114,5 +123,5 @@ class GameEngineConfig extends Equatable {
 
   @override
   List<Object?> get props =>
-      [token, userId, socialMediaId, language, musicEnabled, soundEnabled];
+      [token, userId, socialMediaId, language, musicEnabled, soundEnabled, apiBaseUrl];
 }

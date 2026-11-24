@@ -29,6 +29,9 @@ class _FakeSignalRService extends SignalRService {
   /// host set is the one used" is observable.
   final tokensUsed = <String>[];
 
+  /// The hub URL each connect attempt was pointed at.
+  final urlsUsed = <String>[];
+
   @override
   Stream<SignalRStatus> get statusStream => _statuses.stream;
 
@@ -57,6 +60,7 @@ class _FakeSignalRService extends SignalRService {
     Future<String> Function()? accessTokenFactory,
   }) async {
     connectCalls++;
+    urlsUsed.add(url);
     if (accessTokenFactory != null) {
       tokensUsed.add(await accessTokenFactory());
     }
@@ -202,6 +206,53 @@ void main() {
 
       expect(container.read(appLanguageProvider), AppLanguage.english);
       expect(engine.activeConfig?.language, AppLanguage.english);
+    });
+  });
+
+  group('server address from the host', () {
+    // The token the host hands over is only valid on the server it signed in
+    // to, so the game must talk to that same server: staging for a staging
+    // build, production for a production one.
+    tearDown(() => ApiEndpoints.useServer(null));
+
+    test('REST and the hub both follow the address the host sends', () async {
+      await engine.initialize(
+        config.copyWith(apiBaseUrl: 'https://api-test.example.com'),
+      );
+      await engine.connectHub();
+
+      expect(ApiEndpoints.baseUrl, 'https://api-test.example.com');
+      expect(signalR.urlsUsed.last, 'https://api-test.example.com/GameHub');
+    });
+
+    test('a trailing slash is dropped', () async {
+      await engine.initialize(
+        config.copyWith(apiBaseUrl: 'https://api-test.example.com/'),
+      );
+
+      expect(ApiEndpoints.baseUrl, 'https://api-test.example.com');
+      expect(ApiEndpoints.signalRHubUrl, 'https://api-test.example.com/GameHub');
+    });
+
+    test('no address keeps the one the module was built with', () async {
+      await engine.initialize(config);
+
+      expect(ApiEndpoints.baseUrl, ApiEndpoints.compiledBaseUrl);
+      expect(ApiEndpoints.signalRHubUrl, ApiEndpoints.compiledHubUrl);
+    });
+
+    test('an address that is not https is refused', () async {
+      await engine.initialize(
+        config.copyWith(apiBaseUrl: 'http://plain.example.com'),
+      );
+
+      expect(ApiEndpoints.baseUrl, ApiEndpoints.compiledBaseUrl);
+    });
+
+    test('the address travels over the bridge', () {
+      final map = config.copyWith(apiBaseUrl: 'https://a.example').toMap();
+      expect(GameEngineConfig.fromMap(map).apiBaseUrl, 'https://a.example');
+      expect(GameEngineConfig.fromMap(const {'token': 't'}).apiBaseUrl, '');
     });
   });
 
