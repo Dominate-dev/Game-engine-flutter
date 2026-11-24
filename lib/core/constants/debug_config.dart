@@ -1,8 +1,14 @@
 /// Debug-only config used by the Register button on the launcher.
+///
+/// Credentials come from --dart-define (for example
+/// `--dart-define-from-file=qa.local.json`) so none are ever committed.
 abstract final class DebugConfig {
-  static const debugUserName = '';
-  static const debugPassword = '';
-  static const socialMedia = '112319659759268332039';
+  static const debugUserName = String.fromEnvironment('DEBUG_USERNAME');
+  static const debugPassword = String.fromEnvironment('DEBUG_PASSWORD');
+  static const socialMedia = String.fromEnvironment(
+    'DEBUG_SOCIAL_MEDIA_ID',
+    defaultValue: '112319659759268332039',
+  );
   // static const socialMedia = '118257441539724769068';
   // static const socialMedia = '101694257782137160947';
 
