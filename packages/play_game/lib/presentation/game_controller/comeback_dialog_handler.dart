@@ -3,8 +3,8 @@ part of 'game_controller.dart';
 /// Comeback overlay durations from the reference
 /// (`docs/tasks/comeback-round-workflow.md`, section 5). Dialog lifetimes
 /// only — the match countdown is server-driven and untouched by any of this.
-const _comebackShortDialogMs = 1500; // correct (me), wrong (me), timeout
-const _comebackLongDialogMs = 2000; // correct (opponent)
+int get _comebackShortDialogMs => GamePace.messageMs(1500); // correct (me), wrong (me), timeout
+int get _comebackLongDialogMs => GamePace.messageMs(2000); // correct (opponent)
 
 /// Comeback (round 4) overlays — also used by Breaker (round 5), which is
 /// confirmed to share this exact dialog lifecycle.

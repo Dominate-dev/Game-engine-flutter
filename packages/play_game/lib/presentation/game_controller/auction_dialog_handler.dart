@@ -3,8 +3,8 @@ part of 'game_controller.dart';
 /// Auction overlay durations from the reference
 /// (`docs/tasks/auction-round-workflow.md`, section 5). Dialog lifetimes only —
 /// the match countdown is server-driven and untouched by any of this.
-const _auctionLongDialogMs = 2000; // start increasing
-const _auctionShortDialogMs = 1500; // turn, correct, wrong, timeout, reveal
+int get _auctionLongDialogMs => GamePace.messageMs(2000); // start increasing
+int get _auctionShortDialogMs => GamePace.messageMs(1500); // turn, correct, wrong, timeout, reveal
 
 /// Auction (round 2) overlays.
 ///

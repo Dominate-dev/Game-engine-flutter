@@ -6,6 +6,7 @@ library coreapp;
 
 // Public Game Engine API — the native integration boundary.
 export 'engine/game_engine.dart';
+export 'engine/game_pace.dart';
 export 'engine/game_engine_channel.dart';
 export 'engine/game_engine_config.dart';
 export 'engine/game_engine_connection_state.dart';

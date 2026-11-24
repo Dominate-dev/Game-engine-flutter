@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../engine/game_pace.dart';
 import '../security/security_generator.dart';
 import '../storage/shared_prefs_service.dart';
 
@@ -33,6 +34,7 @@ class ApiHeadersBuilder {
       'device-id': deviceId,
       'device-name': _deviceName,
       'X-Timezone': _formatTimezoneOffset(DateTime.now().timeZoneOffset),
+      if (GamePace.fast) 'game-pace': 'fast',
     };
   }
 

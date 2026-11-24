@@ -141,6 +141,12 @@ Map<String, dynamic> _breakerGame() => {
     };
 
 void main() {
+  // These pin the classic presentation (blocking, queued, full-length
+  // messages). The fast presentation has its own tests in
+  // fast_round_messages_test.dart.
+  setUp(() => GamePace.fast = false);
+  tearDown(() => GamePace.fast = true);
+
   late ProviderContainer container;
   late _DialogRecorder recorder;
 

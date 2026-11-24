@@ -22,6 +22,7 @@ library;
 
 import 'dart:async';
 
+import 'package:coreapp/coreapp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -198,12 +199,25 @@ class _RoundSubPanelLayerState extends ConsumerState<RoundSubPanelLayer> {
           opacity: value,
           child: child,
         ),
-        child: Stack(
-          children: [
-            const ModalBarrier(dismissible: false, color: Colors.black54),
-            panel.child,
-          ],
-        ),
+        child: GamePace.fast
+            // A banner high on the screen that never takes a tap: the
+            // question and the answers stay visible and playable under it.
+            ? IgnorePointer(
+                child: Align(
+                  alignment: const Alignment(0, -0.62),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.82,
+                    heightFactor: 0.26,
+                    child: panel.child,
+                  ),
+                ),
+              )
+            : Stack(
+                children: [
+                  const ModalBarrier(dismissible: false, color: Colors.black54),
+                  panel.child,
+                ],
+              ),
       ),
     );
   }

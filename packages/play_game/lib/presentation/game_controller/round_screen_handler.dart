@@ -3,8 +3,8 @@ part of 'game_controller.dart';
 /// Overlay durations from the T30 reference
 /// (`docs/tasks/what-do-you-know-round-workflow.md`, section 5). These are
 /// dialog lifetimes only — the match countdown is server-driven and unrelated.
-const _wdykLongDialogMs = 2000; // intro, strike
-const _wdykShortDialogMs = 1500; // turn, correct, timeout, reveal, skip
+int get _wdykLongDialogMs => GamePace.messageMs(2000); // intro, strike
+int get _wdykShortDialogMs => GamePace.messageMs(1500); // turn, correct, timeout, reveal, skip
 
 /// Round screen SignalR handlers.
 /// Called when round screens receive hub events like ChangeTurn, Penalty, TimeStarted.
@@ -38,7 +38,11 @@ extension RoundScreenHandler on GameController {
       lottie: lottie,
     );
     final phase = _s.phase;
-    if (phase == GamePhase.wdyk ||
+    if (GamePace.fast) {
+      // A banner over the round, not a gate in front of it: play and music
+      // start at once.
+      _enqueueRoundDialog(phase, showDialog, intro);
+    } else if (phase == GamePhase.wdyk ||
         phase == GamePhase.auction ||
         phase == GamePhase.bell) {
       // Through the chain, so an event arriving during the intro queues
@@ -94,6 +98,20 @@ extension RoundScreenHandler on GameController {
     Widget child,
   ) {
     if (!_isForeground) {
+      return;
+    }
+    if (GamePace.fast) {
+      // Latest wins: the panel replaces whatever message is up, and nothing
+      // waits behind another message.
+      if (_s.phase != phase) {
+        return;
+      }
+      unawaited(
+        showDialog(barrierDismissible: false, child: child)
+            .catchError((Object error) {
+          AppLogger.log('GameController — round message skipped | $error');
+        }),
+      );
       return;
     }
     final isIdle = _roundDialogsPending == 0;

@@ -2,10 +2,10 @@ part of 'game_controller.dart';
 
 /// Every Bell overlay is 1500ms except the start-time overlay (below) and
 /// the round intro, which reuses [showRoundIntro]'s existing 2000ms.
-const _bellShortDialogMs = 1500;
+int get _bellShortDialogMs => GamePace.messageMs(1500);
 
 /// `TimeStarted`'s own overlay — same duration as WDYK's and Auction's.
-const _bellLongDialogMs = 2000;
+int get _bellLongDialogMs => GamePace.messageMs(2000);
 
 /// Bell (round 3) overlays.
 ///
