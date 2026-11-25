@@ -198,6 +198,11 @@ class GameEngine {
     await _requireHost()?.joinPrivateGame(code);
   }
 
+  Future<void> startJudgeGame(List<int> interestIds) async {
+    _throwIfDisposed();
+    await _requireHost()?.startJudgeGame(List<int>.unmodifiable(interestIds));
+  }
+
   // Host-initiated exit. Goes through the game's own single exit owner — this
   // opens no second LeaveGame path. A configuration held during the game is
   // applied once the game is gone.

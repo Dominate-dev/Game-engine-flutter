@@ -42,6 +42,8 @@ class GameEngineChannel {
   static const methodJoinRandomGame = 'joinRandomGame';
   static const methodCreatePrivateGame = 'createPrivateGame';
   static const methodJoinPrivateGame = 'joinPrivateGame';
+  // Optional argument {interestIds: [int]}; omitted or empty is allowed.
+  static const methodStartJudgeGame = 'startJudgeGame';
   static const methodLeaveGame = 'leaveGame';
   static const methodDispose = 'dispose';
 
@@ -156,6 +158,9 @@ class GameEngineChannel {
         case methodJoinPrivateGame:
           await _engine.joinPrivateGame(_codeFrom(call));
           return null;
+        case methodStartJudgeGame:
+          await _engine.startJudgeGame(_optionalInterestIdsFrom(call));
+          return null;
         case methodLeaveGame:
           await _engine.leaveGame();
           return null;
@@ -203,6 +208,16 @@ class GameEngineChannel {
       throw ArgumentError('${call.method} expects a configuration map');
     }
     return GameEngineConfig.fromMap(Map<Object?, Object?>.from(arguments));
+  }
+
+  // startJudgeGame: interestIds is optional there, unlike createPrivateGame.
+  List<int> _optionalInterestIdsFrom(MethodCall call) {
+    final arguments = call.arguments;
+    final raw = arguments is Map ? arguments['interestIds'] : arguments;
+    if (raw == null) {
+      return const [];
+    }
+    return _interestIdsFrom(call);
   }
 
   List<int> _interestIdsFrom(MethodCall call) {

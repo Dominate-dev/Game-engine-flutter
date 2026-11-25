@@ -81,6 +81,17 @@ class PlayGameEngineHost implements GameEngineHost {
     );
   }
 
+  @override
+  Future<void> startJudgeGame(List<int> interestIds) async {
+    final context = _hostContext;
+    if (context == null) {
+      return;
+    }
+    await _present(
+      PlayGame.openJudgeGame(context, interestIds: interestIds, animated: false),
+    );
+  }
+
   /// Completes when the requested flow is on screen — not when the user later
   /// leaves it.
   ///

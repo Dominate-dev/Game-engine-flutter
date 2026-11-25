@@ -9,6 +9,7 @@ import '../features/stickers/presentation/providers/stickers_paging_notifier.dar
 import '../features/stickers/presentation/providers/stickers_providers.dart';
 import 'game_controller/game_controller_screen.dart';
 import 'game_controller/play_game_hub_bindings.dart';
+import 'judge/judge_screen.dart';
 import 'pages/player_profile/player_profile_screen.dart';
 
 /// A [MaterialPageRoute] that arrives already there.
@@ -86,6 +87,22 @@ abstract final class PlayGame {
     return Navigator.of(context).push<void>(
       _entryRoute(
         (_) => GameControllerScreen(privateGameCode: gameCode),
+        animated: animated,
+      ),
+    );
+  }
+
+  /// Opens Judge mode: the judge names two players and records their game
+  /// (docs/JUDGE_MODE_SPEC.md). [interestIds] are the host's; empty lets the
+  /// server use the judge's own interests.
+  static Future<void> openJudgeGame(
+    BuildContext context, {
+    List<int> interestIds = const [],
+    bool animated = true,
+  }) {
+    return Navigator.of(context).push<void>(
+      _entryRoute(
+        (_) => JudgeScreen(interestIds: interestIds),
         animated: animated,
       ),
     );

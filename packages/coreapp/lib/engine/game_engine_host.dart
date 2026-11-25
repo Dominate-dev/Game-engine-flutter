@@ -20,6 +20,10 @@ abstract class GameEngineHost {
 
   Future<void> joinPrivateGame(String code);
 
+  // Judge mode: the judge names two players on this device and records their
+  // game. [interestIds] may be empty (the server then uses the judge's own).
+  Future<void> startJudgeGame(List<int> interestIds);
+
   // Leaves through the game's own single exit owner. Must be a no-op when no
   // game is active, and must not open a second LeaveGame path.
   Future<void> leaveGame();

@@ -130,6 +130,7 @@ class GameEngine {
   Future<void> joinRandomGame();
   Future<void> createPrivateGame(List<int> interestIds);
   Future<void> joinPrivateGame(String code);
+  Future<void> startJudgeGame(List<int> interestIds);
   Stream<void> get onGameExited;
 
   Future<void> leaveGame();
@@ -276,6 +277,7 @@ over the same channel, so the native side registers one object.
 | `joinRandomGame` | none | `null` |
 | `createPrivateGame` | `{'interestIds': List<int>}`, or the list directly | `null` |
 | `joinPrivateGame` | `{'code': String}`, or the string directly | `null` |
+| `startJudgeGame` | optional `{'interestIds': List<int>}`, the list, or nothing | `null` |
 | `leaveGame` | none | `null` |
 | `dispose` | none | `null` |
 
@@ -376,6 +378,12 @@ exposes the capability; it does not reimplement it.
 | `joinRandomGame()` | `PlayGame.openWaiting` | `JoinRandomGame` (no args) |
 | `createPrivateGame(ids)` | `PlayGame.openPrivateGame` | `CreatePrivateGame([ids])` |
 | `joinPrivateGame(code)` | `PlayGame.openPrivateGameByCode` | `JoinPrivateGame([code])` |
+| `startJudgeGame(ids)` | `PlayGame.openJudgeGame` | `CreateGame([3])`, then `StartJudgeGame([gameId, p1, p2, ids or null])` once the judge names the players |
+
+Judge mode (`docs/JUDGE_MODE_SPEC.md`) has its own screen and controller
+(`JudgeScreen`, `JudgeController`) and shares the single exit: it registers with
+the same session handle, so `leaveGame()` and `onGameExited` behave as for 1v1.
+Empty interest ids let the server use the judge's own interests.
 
 The interest ids are the host's — nothing is defaulted and no debug id is
 invented. Both private dispatches are connection-gated and deferred until the

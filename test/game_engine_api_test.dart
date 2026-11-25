@@ -113,6 +113,15 @@ class _FakeHost implements GameEngineHost {
   }
 
   @override
+  Future<void> startJudgeGame(List<int> interestIds) async {
+    calls.add('judge');
+    judgeInterestIds.add(interestIds);
+    active = true;
+  }
+
+  final judgeInterestIds = <List<int>>[];
+
+  @override
   Future<void> leaveGame() async {
     leaveCalls++;
     calls.add('leave');

@@ -120,7 +120,7 @@ class _HomeLauncherPageState extends BaseState<HomeLauncherPage>
             onPressed: _onPlayerProfileTapped,
           ),
           const SizedBox(height: 12),
-          GameButton(label: appStrings.judge, onPressed: _onGameTapped),
+          GameButton(label: appStrings.judge, onPressed: _onJudgeTapped),
           const SizedBox(height: 12),
           GameButton(label: appStrings.allInOne, onPressed: _onGameTapped),
           const SizedBox(height: 12),
@@ -229,6 +229,10 @@ class _HomeLauncherPageState extends BaseState<HomeLauncherPage>
 
   Future<void> _onPlayerProfileTapped() =>
       PlayGame.openPlayerProfile(context, playerId: testPublicProfileId);
+
+  void _onJudgeTapped() {
+    unawaited(PlayGame.openJudgeGame(context));
+  }
 
   void _onGameTapped() {
     final appStrings = ref.read(appStringsProvider);
