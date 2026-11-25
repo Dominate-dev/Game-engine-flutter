@@ -439,6 +439,17 @@ void main() {
       expect(host.calls, ['random']);
     });
 
+    test('startJudgeGame forwards the ids, empty included', () async {
+      await engine.startJudgeGame([4]);
+      await engine.startJudgeGame(const []);
+
+      expect(host.calls, ['judge', 'judge']);
+      expect(host.judgeInterestIds, [
+        [4],
+        <int>[],
+      ]);
+    });
+
     test('a flow requested with no host registered is ignored, not thrown',
         () async {
       final bare = GameEngine(container: container);
@@ -672,6 +683,18 @@ void main() {
       signalR.emit(SignalRStatus.connected);
       await Future<void>.delayed(Duration.zero);
       expect(toNative, isEmpty, reason: 'no push after detach');
+    });
+
+    test('startJudgeGame crosses with or without interest ids', () async {
+      await callFromNative(GameEngineChannel.methodStartJudgeGame, {
+        'interestIds': [5, 6],
+      });
+      await callFromNative(GameEngineChannel.methodStartJudgeGame);
+
+      expect(host.judgeInterestIds, [
+        [5, 6],
+        <int>[],
+      ]);
     });
 
     test('leave over the channel reaches the host once', () async {
